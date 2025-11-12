@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold'em Pot Odds Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #1e3c72;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .decision {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .decision.call {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .decision.fold {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .decision.marginal {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .charts-container {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .small-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>🃏 Pot Odds Calculator</h1>
+        
+        <div class="input-group">
+            <label for="potSize">Current Pot Size ($)</label>
+            <input type="number" id="potSize" placeholder="e.g., 100" min="0" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label for="betAmount">Bet You're Facing ($)</label>
+            <input type="number" id="betAmount" placeholder="e.g., 50" min="0" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label for="outs">Number of Outs</label>
+            <input type="number" id="outs" placeholder="e.g., 9 for flush draw" min="0" max="47" step="1">
+            <div class="small-text">Outs are cards that will improve your hand to likely win</div>
+        </div>
+
+        <div class="input-group">
+            <label for="street">Street</label>
+            <select id="street" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+                <option value="flop">Flop (2 cards to come)</option>
+                <option value="turn">Turn (1 card to come)</option>
+            </select>
+        </div>
+
+        <button class="calculate-btn" onclick="calculate()">Calculate Pot Odds</button>
+
+        <div class="results" id="results">
+            <div class="result-item">
+                <div class="result-label">Pot Odds</div>
+                <div class="result-value" id="potOdds">-</div>
+                <div class="small-text" id="potOddsPercent">-</div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Equity Needed to Call</div>
+                <div class="result-value" id="equityNeeded">-</div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Your Estimated Equity</div>
+                <div class="result-value" id="handEquity">-</div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Expected Value (EV)</div>
+                <div class="result-value" id="expectedValue">-</div>
+            </div>
+
+            <div class="decision" id="decision">
+                CALL ✓
+            </div>
+
+            <div class="explanation" id="explanation">
+                
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <div class="chart-title">Pot Breakdown</div>
+                    <canvas id="potChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <div class="chart-title">Equity Comparison</div>
+                    <canvas id="equityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let potChart = null;
+        let equityChart = null;
+
+        function createCharts(potSize, betAmount, handEquityPercent, equityNeeded) {
+            // Destroy existing charts if they exist
+            if (potChart) potChart.destroy();
+            if (equityChart) equityChart.destroy();
+
+            // Pot Breakdown Pie Chart
+            const potCtx = document.getElementById('potChart').getContext('2d');
+            potChart = new Chart(potCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Current Pot', 'Bet to Call'],
+                    datasets: [{
+                        data: [potSize, betAmount],
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(102, 126, 234, 1)',
+                            'rgba(118, 75, 162, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': $' + context.parsed.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Equity Comparison Bar Chart
+            const equityCtx = document.getElementById('equityChart').getContext('2d');
+            
+            // Determine colors based on profitability
+            let yourEquityColor, neededEquityColor;
+            if (handEquityPercent > equityNeeded) {
+                yourEquityColor = 'rgba(40, 167, 69, 0.8)'; // Green
+                neededEquityColor = 'rgba(220, 53, 69, 0.8)'; // Red
+            } else {
+                yourEquityColor = 'rgba(220, 53, 69, 0.8)'; // Red
+                neededEquityColor = 'rgba(40, 167, 69, 0.8)'; // Green
+            }
+
+            equityChart = new Chart(equityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Your Equity', 'Needed Equity'],
+                    datasets: [{
+                        data: [handEquityPercent, equityNeeded],
+                        backgroundColor: [yourEquityColor, neededEquityColor],
+                        borderColor: [
+                            yourEquityColor.replace('0.8', '1'),
+                            neededEquityColor.replace('0.8', '1')
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculate() {
+            // Get input values
+            const potSize = parseFloat(document.getElementById('potSize').value);
+            const betAmount = parseFloat(document.getElementById('betAmount').value);
+            const outs = parseInt(document.getElementById('outs').value);
+            const street = document.getElementById('street').value;
+
+            // Validate inputs
+            if (isNaN(potSize) || isNaN(betAmount) || isNaN(outs)) {
+                alert('Please fill in all fields with valid numbers');
+                return;
+            }
+
+            if (potSize < 0 || betAmount < 0 || outs < 0) {
+                alert('Values must be positive');
+                return;
+            }
+
+            // Calculate pot odds
+            const totalPot = potSize + betAmount;
+            const potOddsRatio = totalPot / betAmount;
+            const potOddsPercent = (betAmount / (totalPot + betAmount)) * 100;
+
+            // Calculate hand equity based on outs
+            // Rule of 4 and 2: multiply outs by 4 on flop, by 2 on turn
+            let handEquityPercent;
+            if (street === 'flop') {
+                // More accurate formula for 2 cards to come
+                handEquityPercent = (outs * 4) - (outs - 8) * (outs > 8 ? 1 : 0);
+            } else {
+                handEquityPercent = outs * 2;
+            }
+
+            // Cap at reasonable maximum
+            handEquityPercent = Math.min(handEquityPercent, 100);
+
+            // Calculate equity needed
+            const equityNeeded = potOddsPercent;
+
+            // Calculate EV
+            const callAmount = betAmount;
+            const ev = (handEquityPercent / 100) * totalPot - callAmount;
+
+            // Display results
+            document.getElementById('potOdds').textContent = `${potOddsRatio.toFixed(2)}:1`;
+            document.getElementById('potOddsPercent').textContent = `(You need to win ${potOddsPercent.toFixed(1)}% of the time)`;
+            document.getElementById('equityNeeded').textContent = `${equityNeeded.toFixed(1)}%`;
+            document.getElementById('handEquity').textContent = `${handEquityPercent.toFixed(1)}%`;
+            document.getElementById('expectedValue').textContent = `$${ev.toFixed(2)}`;
+
+            // Determine decision
+            const decisionElement = document.getElementById('decision');
+            const explanationElement = document.getElementById('explanation');
+            
+            const equityDiff = handEquityPercent - equityNeeded;
+
+            if (equityDiff > 2) {
+                decisionElement.className = 'decision call';
+                decisionElement.textContent = '✓ CALL';
+                explanationElement.innerHTML = `<strong>Profitable Call!</strong><br>Your hand equity (${handEquityPercent.toFixed(1)}%) is higher than the equity you need (${equityNeeded.toFixed(1)}%). This call has a positive expected value of $${ev.toFixed(2)}.`;
+            } else if (equityDiff < -2) {
+                decisionElement.className = 'decision fold';
+                decisionElement.textContent = '✗ FOLD';
+                explanationElement.innerHTML = `<strong>Unprofitable Call</strong><br>Your hand equity (${handEquityPercent.toFixed(1)}%) is lower than the equity you need (${equityNeeded.toFixed(1)}%). This call has a negative expected value of $${ev.toFixed(2)}. You should fold.`;
+            } else {
+                decisionElement.className = 'decision marginal';
+                decisionElement.textContent = '⚠ MARGINAL';
+                explanationElement.innerHTML = `<strong>Close Decision</strong><br>Your hand equity (${handEquityPercent.toFixed(1)}%) is very close to the equity needed (${equityNeeded.toFixed(1)}%). Consider other factors like implied odds, opponent tendencies, and position.`;
+            }
+
+            // Show results
+            document.getElementById('results').classList.add('show');
+
+            // Create charts
+            createCharts(potSize, betAmount, handEquityPercent, equityNeeded);
+        }
+
+        // Allow Enter key to calculate
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                calculate();
+            }
+        });
+    </script>
+</body>
+</html>
