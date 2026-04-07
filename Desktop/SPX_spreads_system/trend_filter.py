@@ -5,7 +5,3 @@ def trend_filter(spx_price, ma_200):
         return {"trend": "bearish", "spread_direction": "bear_call_spread"}
     else:
         return {"trend": "neutral", "spread_direction": "iron_condor"}
-
-print(trend_filter(5200, 5000))
-print(trend_filter(4800, 5000))
-print(trend_filter(5010, 5000))

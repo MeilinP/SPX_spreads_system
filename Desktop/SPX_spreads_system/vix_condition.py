@@ -7,6 +7,3 @@ def vix_condition(vix):
         return {"trade": True, "multiplier": 0.5, "reason": "High volatility, half size"}
     else:
         return {"trade": False, "multiplier": 0, "reason": "Extreme volatility, no trade"}
-print(vix_condition(18))
-print(vix_condition(28))
-print(vix_condition(40))
